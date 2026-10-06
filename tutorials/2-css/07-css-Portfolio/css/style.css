@@ -58,8 +58,6 @@ img {
     max-width: 100%;
 }
 
-
-
 /* General CSS */
 
 html {
@@ -253,6 +251,13 @@ footer img {
         max-width: 1.5rem;
         margin: 0 .1rem;
     }    
+}
+
+.video {
+    display: block;
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
 }
 
 /* Flex styling */
