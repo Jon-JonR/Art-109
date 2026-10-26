@@ -1,18 +1,17 @@
-const webcamVideo = document.querySelector("#webcam")
+const webcamVideo = document.querySelector("#webcam");
 
-async function setupWebcam() {
-    try {
+async function startWebcam() {
+try {
+const stream = await navigator.mediaDevices.getUserMedia({
+video: true,
+audio: false
+});
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-        video: true, 
-        audio: false
-    })
+webcamVideo.srcObject = stream;
 
-    webcamVideo.srcObject = stream;
-
-    }  catch (error) {
-        console.log("Error accessing webcam");
-    }
+} catch (error) {
+console.error("Error accessing webcam:", error);
+}
 }
 
 startWebcam();
