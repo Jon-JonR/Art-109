@@ -1,0 +1,13 @@
+.Oguri {
+    position: absolute;
+    top: 10px;
+    left: 30px;
+}
+
+.Oguri-text {
+    position: relative;
+    margin: 50px auto;
+    max-width: 600px;
+    font-size: 3rem;
+}
+

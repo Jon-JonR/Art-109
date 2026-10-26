@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main>
+        <iframe src="https://www.youtube.com/embed/9ou1pl0XNRs?si=ct8UR2qll0Dkju6y" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <img src="media/Oguri.gif" alt="Oguri" class="Oguri">
+        <div class="Oguri-text">
+            <p>Uma Dancing cause funny</p>
+            <img src="media/Tamamo.gif" alt="Tamamo" class="Tamamo">
+        </div>
+        <div>
+        <!-- autoplay video-->
+        <video width="600" height="400"autoplay muted loop>
+            <source src="media/Pancakes.mp4" type="video/mp4">
+        </video>
+        <!-- hover video -->
+        <video class="hover-video" width="600" height="400" muted loop>
+            <source src="media/Pancakes.mp4" type="video/mp4">
+        </video>
+        <video class="hover-video" width="600" height="400" muted loop>
+            <source src="media/Pancakes.mp4" type="video/mp4">
+        </video>
+        </div>
+        <!-- click on play video -->
+        <video class="click-video" width="600" height="400" muted loop>
+            <source src="media/Pancakes.mp4" type="video/mp4">
+        </video>
+
+        <video id="webcam" autoplay playsinline></video>
+
+    </main>
+
+    <script src="js/video.js"></script>
+    <script src="js/webcam.js"></script>
+</body>
+</html>
