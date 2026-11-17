@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101513">
+    <title>Orbit / A Spinning Cube</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --ink: #f0eee3;
+            --muted: #9da69c;
+            --acid: #d7f36a;
+            --line: rgba(240, 238, 227, 0.18);
+            font-family: "Trebuchet MS", "Arial Narrow", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            color: var(--ink);
+            background:
+                radial-gradient(ellipse at 50% 48%, rgba(80, 104, 75, 0.22), transparent 39%),
+                linear-gradient(135deg, #151b18, #0d1110 68%);
+        }
+
+        .stage {
+            position: relative;
+            display: grid;
+            min-height: 100svh;
+            grid-template-rows: auto 1fr auto;
+            overflow: clip;
+            padding: clamp(20px, 4vw, 56px);
+            isolation: isolate;
+        }
+
+        .stage::before {
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            background-image: linear-gradient(rgba(240, 238, 227, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(240, 238, 227, 0.035) 1px, transparent 1px);
+            background-size: 64px 64px;
+            content: "";
+            mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
+        }
+
+        .stage::after {
+            position: absolute;
+            z-index: -1;
+            top: 50%;
+            left: 64%;
+            width: min(76vw, 880px);
+            aspect-ratio: 1.45;
+            border-radius: 50%;
+            background: repeating-conic-gradient(from 0deg, rgba(215, 243, 106, 0.38) 0deg 0.8deg, transparent 0.8deg 12deg);
+            mask-image: radial-gradient(ellipse, transparent 0 57%, #000 57.4% 59.4%, transparent 60%);
+            content: "";
+            pointer-events: none;
+            transform: translate(-50%, -50%) rotate(-24deg);
+            animation: orbit-field 64s linear infinite;
+        }
+
+        .topline,
+        .bottomline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .eyebrow,
+        .status,
+        .coordinates,
+        .caption {
+            margin: 0;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            line-height: 1.5;
+            text-transform: uppercase;
+        }
+
+        .eyebrow {
+            color: var(--muted);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--acid);
+        }
+
+        .status::before {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 14px currentColor;
+            content: "";
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+
+        .scene {
+            position: relative;
+            min-height: 300px;
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        .click-ripple {
+            position: fixed;
+            z-index: 4;
+            top: var(--click-y);
+            left: var(--click-x);
+            width: 22px;
+            aspect-ratio: 1;
+            border: 1px solid var(--click-color);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: click-ripple 650ms cubic-bezier(0.16, 0.7, 0.3, 1) forwards;
+        }
+
+        .click-bloom {
+            position: fixed;
+            z-index: 3;
+            top: var(--click-y);
+            left: var(--click-x);
+            width: clamp(180px, 30vmin, 440px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--click-color), transparent 70%);
+            filter: blur(14px);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            animation: click-bloom 800ms ease-out forwards;
+        }
+
+        .click-ripple::after {
+            position: absolute;
+            inset: -7px;
+            border: 1px solid var(--click-color);
+            border-radius: inherit;
+            content: "";
+        }
+
+        .title-block {
+            position: absolute;
+            z-index: 1;
+            top: 50%;
+            left: 0;
+            max-width: 250px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(42px, 7vw, 88px);
+            font-weight: 900;
+            line-height: 0.86;
+            text-transform: uppercase;
+        }
+
+        h1 span {
+            display: block;
+            color: var(--acid);
+        }
+
+        .caption {
+            margin-top: 20px;
+            color: var(--muted);
+        }
+
+        .click-prompt {
+            margin: 18px 0 0;
+            padding-left: 10px;
+            border-left: 2px solid var(--acid);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .coordinates {
+            color: var(--muted);
+        }
+
+        .coordinates strong {
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        .bottomline {
+            border-top: 1px solid var(--line);
+            padding-top: 16px;
+        }
+
+        .bottomline p {
+            margin: 0;
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @keyframes pulse {
+            50% { opacity: 0.45; }
+        }
+
+        @keyframes click-ripple {
+            from { opacity: 0.9; transform: translate(-50%, -50%) scale(0.15); }
+            to { opacity: 0; transform: translate(-50%, -50%) scale(7); }
+        }
+
+        @keyframes click-bloom {
+            from { opacity: 0.34; transform: translate(-50%, -50%) scale(0.2); }
+            to { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+        }
+
+        @keyframes orbit-field {
+            to { transform: translate(-50%, -50%) rotate(336deg); }
+        }
+
+        @media (max-width: 600px) {
+            .stage {
+                padding: 22px;
+            }
+
+            .stage::after {
+                left: 50%;
+                width: min(94vw, 520px);
+            }
+
+            .scene {
+                min-height: 360px;
+            }
+
+            .title-block {
+                top: auto;
+                bottom: 8%;
+                max-width: 190px;
+                transform: none;
+            }
+
+            h1 {
+                font-size: 54px;
+            }
+
+            .caption {
+                margin-top: 12px;
+                font-size: 9px;
+            }
+
+            .click-prompt {
+                margin-top: 12px;
+            }
+
+            .note {
+                max-width: 140px;
+                text-align: right;
+            }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <main class="stage">
+        <header class="topline">
+            <p class="eyebrow">Object study / 001</p>
+            <p class="status">Rotation active</p>
+        </header>
+
+        <section class="scene" aria-label="A three-dimensional cube rotating continuously">
+            <div class="title-block">
+                <h1>Orbit<span>Cube</span></h1>
+                <h2 class="click-prompt">Click to create an effect</h2>
+                <p class="caption">A simple form in constant motion</p>
+            </div>
+        </section>
+
+        <footer class="bottomline">
+            <p class="coordinates">Three.js <strong>/ WebGL</strong></p>
+            <p class="note">Six faces, endless rotation</p>
+        </footer>
+    </main>
+
+    <script type="module">
+        import * as THREE from "three";
+
+        const sceneElement = document.querySelector(".scene");
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+        camera.position.set(0, 0, 7);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(sceneElement.clientWidth, sceneElement.clientHeight);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        sceneElement.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+        keyLight.position.set(-3, 5, 6);
+        scene.add(keyLight);
+        const rimLight = new THREE.PointLight(0xd7f36a, 18, 12);
+        rimLight.position.set(3, -2, 2);
+        scene.add(rimLight);
+
+        const faceColors = [0xf08a59, 0xd7f36a, 0x5ca7a1, 0xe7d9bd, 0xb7a3d8, 0xe9bd58];
+        const materials = faceColors.map((color) => new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.38,
+            metalness: 0.08
+        }));
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.9, 1.9), materials);
+        cube.rotation.set(0.42, 0.58, 0.12);
+        scene.add(cube);
+
+        const colorPalettes = [
+            [0x5ca7a1, 0xe9bd58, 0xe6685c, 0xe7d9bd, 0xd7f36a, 0xb7a3d8],
+            [0xd7f36a, 0xe6685c, 0xb7a3d8, 0x5ca7a1, 0xe9bd58, 0xf0eee3],
+            [0xb7a3d8, 0x5ca7a1, 0xf08a59, 0xd7f36a, 0xf0eee3, 0xe9bd58]
+        ];
+        let clickCount = 0;
+        let rotationBoost = 0;
+        let scalePulse = 0;
+
+        document.addEventListener("click", (event) => {
+            const palette = colorPalettes[clickCount % colorPalettes.length];
+            clickCount += 1;
+            materials.forEach((material, index) => material.color.setHex(palette[index]));
+            rotationBoost = Math.min(rotationBoost + 0.7, 2.1);
+            scalePulse = Math.min(scalePulse + 0.12, 0.36);
+
+            const ripple = document.createElement("span");
+            ripple.className = "click-ripple";
+            ripple.style.setProperty("--click-x", `${event.clientX}px`);
+            ripple.style.setProperty("--click-y", `${event.clientY}px`);
+            ripple.style.setProperty("--click-color", `#${palette[0].toString(16).padStart(6, "0")}`);
+            ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+            document.body.appendChild(ripple);
+            window.setTimeout(() => ripple.remove(), 1000);
+
+            const bloom = document.createElement("span");
+            bloom.className = "click-bloom";
+            bloom.style.setProperty("--click-x", `${event.clientX}px`);
+            bloom.style.setProperty("--click-y", `${event.clientY}px`);
+            bloom.style.setProperty("--click-color", `#${palette[0].toString(16).padStart(6, "0")}`);
+            bloom.addEventListener("animationend", () => bloom.remove(), { once: true });
+            document.body.appendChild(bloom);
+            window.setTimeout(() => bloom.remove(), 1200);
+        });
+
+        const resizeObserver = new ResizeObserver(() => {
+            const { clientWidth, clientHeight } = sceneElement;
+            camera.aspect = clientWidth / clientHeight;
+            camera.position.z = clientWidth <= 600 ? 8.5 : 7;
+            camera.updateProjectionMatrix();
+            renderer.setSize(clientWidth, clientHeight);
+            cube.position.set(clientWidth <= 600 ? 0 : 0.95, clientWidth <= 600 ? 0.65 : 0, 0);
+        });
+        resizeObserver.observe(sceneElement);
+
+        const clock = new THREE.Clock();
+        function animate() {
+            const delta = Math.min(clock.getDelta(), 0.05);
+            rotationBoost = THREE.MathUtils.damp(rotationBoost, 0, 2, delta);
+            scalePulse = THREE.MathUtils.damp(scalePulse, 0, 5, delta);
+            cube.scale.setScalar(1 + scalePulse);
+            cube.rotation.x += delta * (0.34 + rotationBoost * 0.45);
+            cube.rotation.y += delta * (0.52 + rotationBoost);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
